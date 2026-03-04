@@ -1,7 +1,7 @@
-import { Body, Controller, Get, HttpCode, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Put, Query } from '@nestjs/common';
 import { FilmService } from './film.service';
 import { ApiOperation } from '@nestjs/swagger/dist/decorators/api-operation.decorator';
-import { ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { QueryFilmDto } from './dto/query-film.dto';
 import { Film } from './film.interface';
 import { FilmStatus } from './film-status.enum';
@@ -32,6 +32,7 @@ export class FilmController {
     @ApiOperation({ summary: 'Détails d\'un film.' })
     @ApiResponse({ status: 200, description: 'Détails du film trouvé' })
     @ApiResponse({ status: 404, description: 'Film non trouvé' })
+    @ApiParam({ name: 'id', type: Number, description: 'ID du film à récupérer' })
     @Get(':id')
     getFilmById(@Param('id', ParseIntPipe) id: number): Film {
         return this.filmService.getFilmById(id);
@@ -66,12 +67,36 @@ export class FilmController {
     @ApiResponse({ status: 200, description: 'Film remplacé avec succès' })
     @ApiResponse({ status: 403, description: 'Accès réservé aux admins' })
     @ApiResponse({ status: 404, description: 'Film non trouvé' })
+    @ApiParam({ name: 'id', type: Number, description: 'ID du film à remplacer' })
     @Put(':id')
     replace(
         @Param('id', ParseIntPipe) id: number,
         @Body() body: CreateFilmDto
     ) {
-        
         return this.filmService.replace(id, body);
+    }
+
+    @ApiOperation({ summary: 'Modifier partiellement un film' })
+    @ApiResponse({ status: 200, description: 'Film mis à jour avec succès' })
+    @ApiResponse({ status: 403, description: 'Accès réservé aux admins' })
+    @ApiResponse({ status: 404, description: 'Film non trouvé' })
+    @ApiParam({ name: 'id', type: Number, description: 'ID du film à modifier' })
+    @Patch(':id')
+    update(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() body: Partial<CreateFilmDto>
+        ) {
+        return this.filmService.update(id, body);
+    }
+
+    @ApiOperation({ summary: 'Supprimer un film' })
+    @ApiResponse({ status: 204, description: 'Film supprimé avec succès' })
+    @ApiResponse({ status: 403, description: 'Accès réservé aux admins' })
+    @ApiResponse({ status: 404, description: 'Film non trouvé' })
+    @ApiParam({ name: 'id', type: Number, description: 'ID du film à supprimer' })
+    @HttpCode(204)
+    @Delete(':id')
+    remove(@Param('id', ParseIntPipe) id: number) {
+        this.filmService.remove(id);
     }
 }

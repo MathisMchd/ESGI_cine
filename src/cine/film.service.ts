@@ -83,26 +83,41 @@ export class FilmService {
     // Remplacement d'un film
     replace(id: number, body: CreateFilmDto) {
         const films = this.getFilms();
-        const index = films.findIndex(f => f.id === id);
-        if (index === -1) {
-            throw new NotFoundException(`Film with id ${id} not found`);
-        }
+        const index = this.getIndexOfFilm(id, films);
+
         const replacedFilm: Film = { id, ...body };
         films[index] = replacedFilm;
+
         this.storage.write(CONSTS.FILMS_FILE, films);
+        
         return replacedFilm;
     }
 
-    updateFilm(id: number, body: Partial<CreateFilmDto>) {
+    update(id: number, body: Partial<CreateFilmDto>) {
         const films = this.getFilms();
-        const index = films.findIndex(f => f.id === id);
-        if (index === -1) {
-            throw new NotFoundException(`Film with id ${id} not found`);
-        }
+        const index = this.getIndexOfFilm(id, films);
         const updatedFilm: Film = { ...films[index], ...body, id };
         films[index] = updatedFilm;
         this.storage.write(CONSTS.FILMS_FILE, films);
         return updatedFilm;
+    }
+
+    remove(id: number) {
+        const films = this.getFilms();
+        const index = this.getIndexOfFilm(id, films);
+        films.splice(index, 1);
+        this.storage.write(CONSTS.FILMS_FILE, films);
+    }
+
+
+    // Récupérer l'index d'un film par ID
+    // Lève une exception NotFoundException si le film n'existe pas
+    private getIndexOfFilm(id: number, films: Film[]): number {
+        const index = films.findIndex(f => f.id === id);
+        if (index === -1) {
+            throw new NotFoundException(`Film with id ${id} not found`);
+        }
+        return index;
     }
 
     // Récupération des films
