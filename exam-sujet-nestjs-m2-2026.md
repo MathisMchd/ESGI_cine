@@ -1,5 +1,9 @@
 # Sujet d'examen — Cours NestJS M2 ESGI IW 2026
 
+
+# MATHIS MICHENAUD
+
+
 En vous basant sur les connaissances acquises pendant le cours et sur l'API Manga créée pendant les TP, construisez une API REST à destination de professionnels du développement logiciel.
 
 Choisissez un sujet parmi les trois ci-dessous. Une fois votre cahier des charges déterminé, créez un dépôt git et invitez **@NicoHersant** en droit de lecture (ou dépôt public). Votre travail sera livré à la fin du cours.
