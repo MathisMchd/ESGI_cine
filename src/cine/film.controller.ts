@@ -1,0 +1,77 @@
+import { Body, Controller, Get, HttpCode, Param, ParseIntPipe, Post, Put, Query } from '@nestjs/common';
+import { FilmService } from './film.service';
+import { ApiOperation } from '@nestjs/swagger/dist/decorators/api-operation.decorator';
+import { ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { QueryFilmDto } from './dto/query-film.dto';
+import { Film } from './film.interface';
+import { FilmStatus } from './film-status.enum';
+import { CONSTS } from 'src/common/consts';
+import { CreateFilmDto } from './dto/create-film.dto';
+
+@Controller('films')
+export class FilmController {
+    constructor(private readonly filmService: FilmService) { }
+
+    @ApiOperation({ summary: 'Liste paginée filtrée des films' })
+    @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+    @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+    @ApiQuery({ name: 'genre', required: false, type: String, example: 'Crime' })
+    @ApiQuery({ name: 'year', required: false, type: Number, example: 2010 })
+    @ApiQuery({ name: 'status', required: false, enum: FilmStatus })
+    @ApiQuery({ name: 'ratingSort', required: false, enum: ['asc', 'desc'] })
+    @ApiQuery({ name: 'yearSort', required: false, enum: ['asc', 'desc'] })
+    @ApiResponse({ status: 200, description: 'Liste retournée avec pagination' })
+    @ApiResponse({ status: 400, description: 'Paramètres de requête invalides' })
+    @ApiResponse({ status: 401, description: `Header ${CONSTS.API_KEY_HEADER} absent ou invalide` })
+    @ApiResponse({ status: 500, description: 'Erreur interne du serveur' })
+    @Get()
+    findAll(@Query() query: QueryFilmDto) {
+        return this.filmService.findAll(query);
+    }
+
+    @ApiOperation({ summary: 'Détails d\'un film.' })
+    @ApiResponse({ status: 200, description: 'Détails du film trouvé' })
+    @ApiResponse({ status: 404, description: 'Film non trouvé' })
+    @Get(':id')
+    getFilmById(@Param('id', ParseIntPipe) id: number): Film {
+        return this.filmService.getFilmById(id);
+    }
+
+
+
+    @ApiOperation({ summary: 'Recherche de films par mot-clé / Recherche full-text' })
+    @ApiQuery({ name: 'q', required: true, type: String, example: 'The Batman' })
+    @ApiResponse({ status: 200, description: 'La liste des films trouvés' })
+    @ApiResponse({ status: 400, description: 'Paramètre de recherche invalide' })
+    @ApiResponse({ status: 401, description: `Header ${CONSTS.API_KEY_HEADER} absent ou invalide` })
+    @ApiResponse({ status: 500, description: 'Erreur interne du serveur' })
+    @Get('search')
+    search(@Query('q') q: string): Film[] {
+        return this.filmService.search(q);
+    }
+
+    @ApiOperation({ summary: 'Créer un film' })
+    @ApiResponse({ status: 201, description: 'Film créé avec succès' })
+    @ApiResponse({ status: 401, description: `Header ${CONSTS.API_KEY_HEADER} absent ou invalide` })
+    @ApiResponse({ status: 403, description: 'Accès réservé aux admins' })
+    @ApiResponse({ status: 409, description: 'Conflit avec un film déjà existant' })
+    @Post()
+    @HttpCode(201)
+    create(@Body() film: CreateFilmDto): void {
+        this.filmService.create(film);
+    }
+
+
+    @ApiOperation({ summary: 'Remplacer un film' })
+    @ApiResponse({ status: 200, description: 'Film remplacé avec succès' })
+    @ApiResponse({ status: 403, description: 'Accès réservé aux admins' })
+    @ApiResponse({ status: 404, description: 'Film non trouvé' })
+    @Put(':id')
+    replace(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() body: CreateFilmDto
+    ) {
+        
+        return this.filmService.replace(id, body);
+    }
+}

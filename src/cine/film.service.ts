@@ -1,0 +1,117 @@
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { StorageService } from 'src/storage/storage/storage.service';
+import { QueryFilmDto } from './dto/query-film.dto';
+import { Film } from './film.interface';
+import { CONSTS } from 'src/common/consts';
+import { get } from 'http';
+import { CreateFilmDto } from './dto/create-film.dto';
+
+@Injectable()
+export class FilmService {
+    constructor(private readonly storage: StorageService) { }
+
+
+    // Liste paginée des films
+    findAll(query: QueryFilmDto) {
+        const { page = 1, limit = 10, genre, year, status, ratingSort, yearSort } = query;
+        let data: Film[] = this.getFilms();
+
+        // Filtres : genre, année, langue, statut (released / upcoming / cancelled)
+        if (genre) {
+            data = data.filter(c => c.genres.includes(genre));
+        }
+
+        if (year) {
+            data = data.filter(c => c.year === year);
+        }
+
+        if (status) {
+            data = data.filter(c => c.status === status);
+        }
+
+        //Tri par note (rating) et année
+        if (ratingSort) {
+            data = data.sort((a, b) => ratingSort === 'asc' ? a.rating - b.rating : b.rating - a.rating);
+        }
+
+        if (yearSort) {
+            data = data.sort((a, b) => yearSort === 'asc' ? a.year - b.year : b.year - a.year);
+        }
+
+        const start = (page - 1) * limit;
+        const end = start + limit;
+        return {
+            data: data.slice(start, end),
+            total: data.length,
+            page,
+            limit
+        };
+    }
+
+    // Récupération d'un film par ID
+    getFilmById(id: number): Film {
+        const film = this.getFilms().find(f => f.id === id);
+        if (!film) {
+            throw new NotFoundException(`Film with id ${id} not found`);
+        }
+        return film;
+    }
+
+    // Recherche par mot-clé dans le titre, le réalisateur ou le synopsis
+    search(q: string): Film[] {
+        const term = q.toLowerCase();
+        return this.getFilms().filter(
+            (f) =>
+                f.title.toLowerCase().includes(term) ||
+                f.director.toLowerCase().includes(term) ||
+                f.synopsis.toLowerCase().includes(term),
+        );
+    }
+
+    // Création d'un film
+    create(film: CreateFilmDto): void {
+        const films = this.getFilms();
+        if (films.some(f => f.title.toLowerCase() === film.title.toLowerCase())) {
+            throw new ConflictException(`Film with title ${film.title} already exists`);
+        }
+        const nexId = films.length > 0 ? Math.max(...films.map(f => f.id)) + 1 : 1;
+        const newFilm: Film = { id: nexId, ...film };
+        films.push(newFilm);
+        this.storage.write(CONSTS.FILMS_FILE, films);
+    }
+
+    // Remplacement d'un film
+    replace(id: number, body: CreateFilmDto) {
+        const films = this.getFilms();
+        const index = films.findIndex(f => f.id === id);
+        if (index === -1) {
+            throw new NotFoundException(`Film with id ${id} not found`);
+        }
+        const replacedFilm: Film = { id, ...body };
+        films[index] = replacedFilm;
+        this.storage.write(CONSTS.FILMS_FILE, films);
+        return replacedFilm;
+    }
+
+    updateFilm(id: number, body: Partial<CreateFilmDto>) {
+        const films = this.getFilms();
+        const index = films.findIndex(f => f.id === id);
+        if (index === -1) {
+            throw new NotFoundException(`Film with id ${id} not found`);
+        }
+        const updatedFilm: Film = { ...films[index], ...body, id };
+        films[index] = updatedFilm;
+        this.storage.write(CONSTS.FILMS_FILE, films);
+        return updatedFilm;
+    }
+
+    // Récupération des films
+    private getFilms(): Film[] {
+        try {
+            return this.storage.read<Film[]>(CONSTS.FILMS_FILE);
+        } catch (error) {
+            console.error('Error reading film data:', error);
+            throw new Error('Could not read film data');
+        }   
+    }
+}
