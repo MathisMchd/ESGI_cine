@@ -21,7 +21,8 @@ export class QueryFilmDto {
     @IsInt() @Min(1700) @Max(new Date().getFullYear())
     year?: number;
 
-    @IsOptional() @IsEnum(FilmStatus)
+    @IsOptional() 
+    @IsEnum(FilmStatus)
     status?: FilmStatus;
 
     @IsOptional() @IsString()

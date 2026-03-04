@@ -3,8 +3,9 @@ import { StorageService } from 'src/storage/storage/storage.service';
 import { QueryFilmDto } from './dto/query-film.dto';
 import { Film } from './film.interface';
 import { CONSTS } from 'src/common/consts';
-import { get } from 'http';
 import { CreateFilmDto } from './dto/create-film.dto';
+import { FilmStatus } from './film-status.enum';
+import { CustomException } from 'src/common/rule.exceptions';
 
 @Injectable()
 export class FilmService {
@@ -15,13 +16,13 @@ export class FilmService {
     findAll(query: QueryFilmDto) {
         const { page = 1, limit = 10, genre, year, status, ratingSort, yearSort } = query;
         let data: Film[] = this.getFilms();
-
         // Filtres : genre, année, langue, statut (released / upcoming / cancelled)
         if (genre) {
             data = data.filter(c => c.genres.includes(genre));
         }
 
         if (year) {
+            console.log("Filtering by year:", year);
             data = data.filter(c => c.year === year);
         }
 
@@ -83,19 +84,20 @@ export class FilmService {
     // Remplacement d'un film
     replace(id: number, body: CreateFilmDto) {
         const films = this.getFilms();
-        const index = this.getIndexOfFilm(id, films);
+        const [index, _] = this.getIndexOfFilm(id, films);
 
         const replacedFilm: Film = { id, ...body };
         films[index] = replacedFilm;
 
         this.storage.write(CONSTS.FILMS_FILE, films);
-        
+
         return replacedFilm;
     }
 
+
     update(id: number, body: Partial<CreateFilmDto>) {
         const films = this.getFilms();
-        const index = this.getIndexOfFilm(id, films);
+        const [index, _] = this.getIndexOfFilm(id, films);
         const updatedFilm: Film = { ...films[index], ...body, id };
         films[index] = updatedFilm;
         this.storage.write(CONSTS.FILMS_FILE, films);
@@ -104,20 +106,23 @@ export class FilmService {
 
     remove(id: number) {
         const films = this.getFilms();
-        const index = this.getIndexOfFilm(id, films);
+        const [index, film] = this.getIndexOfFilm(id, films);
+        if (film.status === FilmStatus.UPCOMING) {
+            throw new CustomException(409, 'Un film upcoming ne peut pas être supprimé');
+        }
         films.splice(index, 1);
         this.storage.write(CONSTS.FILMS_FILE, films);
     }
 
 
-    // Récupérer l'index d'un film par ID
+    // Récupérer l'index d'un film par son ID et le retourne
     // Lève une exception NotFoundException si le film n'existe pas
-    private getIndexOfFilm(id: number, films: Film[]): number {
+    private getIndexOfFilm(id: number, films: Film[]): [number, Film] {
         const index = films.findIndex(f => f.id === id);
         if (index === -1) {
             throw new NotFoundException(`Film with id ${id} not found`);
         }
-        return index;
+        return [index, films[index]];
     }
 
     // Récupération des films

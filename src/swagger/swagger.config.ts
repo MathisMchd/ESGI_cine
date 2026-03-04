@@ -10,7 +10,7 @@ export function setupSwagger(app: INestApplication): void {
     )
     .setVersion('1.0')
     .addApiKey(
-      { type: 'apiKey', name: CONSTS.API_KEY_HEADER, in: 'header' },
+      { type: 'apiKey', name: 'x-api-key', in: 'header' },
       'api-key',
     )
     .build();

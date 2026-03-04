@@ -4,7 +4,7 @@ import * as path from 'path';
 
 @Injectable()
 export class StorageService {
-  private readonly dataDir = path.join(__dirname, '..', 'data');
+  private readonly dataDir = path.join(__dirname, '../..', 'data');
 
   read<T>(filename: string): T {
     const filePath = path.join(this.dataDir, filename);

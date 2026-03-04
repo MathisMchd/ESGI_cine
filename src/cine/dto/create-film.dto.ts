@@ -49,7 +49,7 @@ export class CreateFilmDto {
         minimum: 1700,
         maximum: new Date().getFullYear()
     })
-    @IsDate()
+    @IsNumber()
     @IsNotEmpty()
     @Max(new Date().getFullYear())
     @Min(1700)
